@@ -1,8 +1,14 @@
+
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:reminder_app/bloc/task_bloc.dart';
 import 'package:reminder_app/core/colors.dart';
 import 'package:reminder_app/core/lists.dart';
 
+
+import '../models/tasks.dart';
 import 'custom_text_field.dart';
 
 class TaskHome extends StatelessWidget {
@@ -65,48 +71,66 @@ class TaskHome extends StatelessWidget {
             ),
             SizedBox(height: 10,),
             Expanded(
-              child: ListView.builder(
-                  itemCount: TaskLists.taskCards.length,
-                  itemBuilder: (context, index) {
-                    final card = TaskLists.taskCards[index];
-                    return Card(
-                      color: card.color,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  card.icon,
-                                  color: CustomColors.iconWhiteColor,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 10,),
-                                Text(
-                                   card.task!,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: CustomColors.iconWhiteColor,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              card.howLong!,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: CustomColors.iconWhiteColor,
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
+              child: BlocBuilder<TaskBloc, TaskState>(
+                builder: (context, state) {
+
+                  if(state is TasksLoadingState){
+                    return const Center(
+                      child: CircularProgressIndicator(backgroundColor:
+                      Colors.purple),
                     );
-                  })
+                  }
+
+                  if (state is TasksLoadedState){
+                    return ListView.builder(
+                                itemCount: state.tasks.length,
+                                itemBuilder: (context, index) {
+                                  final card = state.tasks[index];
+                                  return Card(
+                                    color: card.color,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                card.icon,
+                                                color: CustomColors.iconWhiteColor,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 10,),
+                                              Text(
+                                                 card.task!,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: CustomColors.iconWhiteColor,
+                                                  fontWeight: FontWeight.w500,
+                                                  letterSpacing: 1,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            card.howLong!,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: CustomColors.iconWhiteColor,
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                });
+                  }
+                  else {
+                    return Container();
+                  }
+                  
+                },
+              )
             )
           ],),
         )
@@ -208,7 +232,7 @@ class TaskHome extends StatelessWidget {
                       },
                     ),
                     SizedBox(height: 30,),
-                    _elevatedButton(color),
+                    _elevatedButton(color, icon),
                   ],
                 ),
               ),
@@ -219,30 +243,86 @@ class TaskHome extends StatelessWidget {
     });
   }
 
-  _elevatedButton(color) {
+  _elevatedButton(color, icon) {
     return Container(
       height: 50,
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: (){
-          if(_formKey.currentState!.validate()){
+      child: BlocBuilder<TaskBloc, TaskState>(
+        builder: (context, state) {
+          return ElevatedButton(
+            onPressed: () async {
+              if(_formKey.currentState!.validate()){
+                DateTime? scheduledTime = await _showDateTimePicker(context);
+                if(scheduledTime != null) {
+                  Tasks task = Tasks(
+                    task: _taskController.text,
+                    howLong: _howLongController.text,
+                    color: color,
+                    icon: icon,
+                    scheduledTime: scheduledTime,
+                  );
+                  BlocProvider.of<TaskBloc>(context).add(
+                      TaskAddEvent(task: task)
+                  );
 
-          };
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15)
-          )
-        ),
-        child: Text(
-          'remind me',
-          style: TextStyle(
-            fontSize: 16,
-            color: CustomColors.backgroundColor,
+                  BlocProvider.of<TaskBloc>(context).scheduleNotification(
+                      task.task!,
+                      scheduledTime,
+                  );
+
+                  _taskController.text = '';
+                  _howLongController.text = '';
+
+                  Navigator.pop(context);
+                }
+             }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15)
+            )
           ),
-        ),
-      )
-    );
-  }
+          child: const Text(
+            'remind me',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+            ),
+          ),
+          );
+        }
+        )
+      );
+    }
+    Future<DateTime?> _showDateTimePicker(BuildContext context) async {
+      DateTime selectedDate = DateTime.now();
+      TimeOfDay selectedTime = TimeOfDay.now();
+
+      DateTime? pickedDate = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime.now(),
+        lastDate: DateTime(DateTime.now().year + 10),
+      );
+
+      if (pickedDate != null) {
+        TimeOfDay? pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+
+        if (pickedTime != null) {
+          selectedDate = DateTime(
+              pickedDate.year,
+              pickedDate.month,
+              pickedDate.day,
+              pickedTime.hour,
+              pickedTime.minute
+          );
+        }
+      }
+      return selectedDate;
+    }
+
 }
