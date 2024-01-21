@@ -16,3 +16,8 @@ class TaskAddEvent extends TaskEvent {
         required this.task,
     });
 }
+
+class TaskDeleteEvent extends TaskEvent {
+    final Tasks task;
+    TaskDeleteEvent({ required this.task,});
+}

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:reminder_app/bloc/task_bloc.dart';
 import 'package:reminder_app/core/colors.dart';
@@ -85,41 +86,61 @@ class TaskHome extends StatelessWidget {
                     return ListView.builder(
                                 itemCount: state.tasks.length,
                                 itemBuilder: (context, index) {
+                                  
                                   final card = state.tasks[index];
-                                  return Card(
-                                    color: card.color,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20.0),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 1.5),
+                                    child: Slidable(
+                                      endActionPane: ActionPane(
+                                        motion: const ScrollMotion(),
+                                        extentRatio: 0.2,
                                         children: [
-                                          Row(
+                                          SlidableAction(onPressed: (context){
+                                            BlocProvider.of<TaskBloc>(context).add(TaskDeleteEvent(task: card));
+                                          },
+                                          icon: Icons.close,
+                                          foregroundColor: Colors.white,
+                                          backgroundColor: Colors.black,
+                                          borderRadius: BorderRadius.circular(10),
+                                          )
+                                        ]
+                                      ),
+                                      child: Card(
+                                        color: card.color,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Icon(
-                                                card.icon,
-                                                color: CustomColors.iconWhiteColor,
-                                                size: 20,
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    card.icon,
+                                                    color: CustomColors.iconWhiteColor,
+                                                    size: 20,
+                                                  ),
+                                                  SizedBox(width: 10,),
+                                                  Text(
+                                                     card.task!,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: CustomColors.iconWhiteColor,
+                                                      fontWeight: FontWeight.w500,
+                                                      letterSpacing: 1,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(width: 10,),
                                               Text(
-                                                 card.task!,
+                                                card.howLong!,
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: 14,
                                                   color: CustomColors.iconWhiteColor,
-                                                  fontWeight: FontWeight.w500,
-                                                  letterSpacing: 1,
                                                 ),
-                                              ),
+                                              )
                                             ],
                                           ),
-                                          Text(
-                                            card.howLong!,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: CustomColors.iconWhiteColor,
-                                            ),
-                                          )
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   );

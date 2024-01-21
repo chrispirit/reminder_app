@@ -20,6 +20,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TasksLoadedState(tasks: List.from(state.tasks)..add(event.task)));
 
     });
+
+    on<TaskDeleteEvent>((event, emit) {
+      List<Tasks> tasks =
+      state.tasks.where((task) => task.task != event.task.task).toList();
+      emit(TasksLoadedState(tasks: tasks));
+    });
   }
 
   Future<void> scheduleNotification(String taskName, DateTime scheduledTime) async {
