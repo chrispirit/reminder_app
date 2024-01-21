@@ -53,5 +53,5 @@ class TaskLists {
       color: CustomColors.lightGreenColor,
       icon: Icons.coffee,
     ),
-  ];
+  ]; 
 }
